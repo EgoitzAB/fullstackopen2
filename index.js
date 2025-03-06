@@ -12,6 +12,25 @@ app.get('/api/persons', (req, res) => {
     res.json(persons);
 });
 
+app.get('/api/persons/:id', (request, response) => {
+    const id = Number(request.params.id)
+    const person = persons.find(person => person.id === id)
+    
+    if (person) {
+        response.json(person)  
+    } else {
+        response.status(404).end()  
+    }})
+
+app.get('/info', (req, res) => {
+    const numPersons = persons.length;
+    const timestamp = new Date();
+    res.send(
+        `<p>La agenda telefónica tiene información de ${numPersons} personas.</p>
+         <p>${timestamp}</p>`
+    );
+});
+
 const PORT = 3001;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
