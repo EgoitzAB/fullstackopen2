@@ -3,10 +3,22 @@ const express = require('express')
 const cors = require('cors')
 const morgan = require('morgan')
 const app = express()
+const path = require('path');
 
+app.use(express.static(path.join(__dirname, 'dist')));
 app.use(helmet())
-app.use(cors())
+app.use(cors({
+    origin: '*', // Replace with your frontend URL if needed
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type'],
+}))
 app.use(express.json())
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+});
+
+
 
 
 morgan.token('body', function (req, res) { return JSON.stringify(req.body) })
