@@ -1,15 +1,25 @@
+const helmet = require('helmet')
 const express = require('express')
 const cors = require('cors')
 const morgan = require('morgan')
 const app = express()
 
+app.use(helmet())
 app.use(cors())
 app.use(express.json())
 
 
 morgan.token('body', function (req, res) { return JSON.stringify(req.body) })
 app.use(morgan(':method :url :remote-addr :status :res[content-length] - :response-time ms :body :date[iso]'))
+app.use((req, res, next) => {
+    res.setHeader(
+      'Content-Security-Policy',
+      "default-src 'self'; img-src 'self' https://fullstackopen2-r3mb.onrender.com; style-src 'self' 'unsafe-inline'; script-src 'self';"
+    );
+    next();
+  });
 
+app.use(express.static('public'));
 
 let persons = [
     { id: 1, name: "Arto Hellas", number: "040-123456" },
