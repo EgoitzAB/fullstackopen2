@@ -9,18 +9,9 @@ if (!MONGODB_URI) {
   process.exit(1);
 }
 
-if (process.argv.length<3) {
-    console.log('give password as argument')
-    process.exit(1)
-  }
-
 // Obtiene los argumentos de la línea de comandos
-const [,, password, name, number] = process.argv;
+const [,, name, number] = process.argv;
 
-if (!password) {
-  console.log('Por favor, proporciona la contraseña como argumento: node mongo.js <password>');
-  process.exit(1);
-}
 
 mongoose.set('strictQuery',false)
 mongoose.connect(MONGODB_URI)

@@ -4,6 +4,7 @@ const express = require('express')
 const cors = require('cors')
 const morgan = require('morgan')
 const path = require('path')
+require('./config/mongo')
 const Person = require('./models/person')
 
 const app = express();
@@ -35,14 +36,6 @@ app.use(express.json());
 // Logger con Morgan
 morgan.token('body', (req) => JSON.stringify(req.body));
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'));
-
-// Datos iniciales (esto debería venir de una base de datos en producción)
-let persons = [
-    { id: 1, name: "Arto Hellas", number: "040-123456" },
-    { id: 2, name: "Ada Lovelace", number: "39-44-5323523" },
-    { id: 3, name: "Dan Abramov", number: "12-43-234345" },
-    { id: 4, name: "Mary Poppendieck", number: "39-23-6423122" }
-];
 
 // Rutas API
 app.get('/api/persons', (req, res) => {
@@ -79,9 +72,6 @@ app.get('/info', (req, res) => {
             res.status(500).json({ error: 'Error fetching info' });
         });
 });
-
-
-const generateId = () => Math.floor(Math.random() * 10000000000000000000);
 
 app.post('/api/persons', (req, res) => {
     const { name, number } = req.body;
