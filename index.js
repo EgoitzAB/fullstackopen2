@@ -41,39 +41,44 @@ app.use(morgan(':method :url :status :res[content-length] - :response-time ms :b
 app.get('/api/persons', (req, res) => {
     Person.find({})
         .then(persons => res.json(persons))
-        .catch(error => {
-            console.error('Error fetching persons:', error);
-            res.status(500).json({ error: 'Error fetching persons' });
-        });
+        .catch(error => next(error))
 });
 
-app.get('/api/persons/:id', (req, res) => {
+app.get('/api/persons/:id', (req, res, next) => {
     Person.findById(req.params.id)
         .then(person => {
-            if (person) res.json(person);
-            else res.status(404).json({ error: 'Person not found' });
+            if (person) {
+                res.json(person);
+            } else {
+                res.status(404).json({ error: 'Person not found' });
+            }
         })
-        .catch(error => res.status(400).json({ error: 'Malformatted ID' }));
+        .catch(error => next(error));
 });
 
-app.delete('/api/persons/:id', (req, res) => {
+app.delete('/api/persons/:id', (req, res, next) => {
     Person.findByIdAndDelete(req.params.id)
-        .then(() => res.status(204).end())
-        .catch(error => res.status(400).json({ error: 'Malformatted ID' }));
+        .then(deletedPerson => {
+            if (deletedPerson) {
+                res.status(204).end();
+            } else {
+                res.status(404).json({ error: 'Person not found' });
+            }
+        })
+        .catch(error => next(error));
 });
 
-app.get('/info', (req, res) => {
+
+app.get('/info', (req, res, next) => {
     Person.countDocuments()
         .then(count => {
             res.send(`<p>La agenda telefónica tiene información de ${count} personas.</p><p>${new Date()}</p>`);
         })
-        .catch(error => {
-            console.error('Error fetching info:', error);
-            res.status(500).json({ error: 'Error fetching info' });
-        });
+        .catch(error => next(error));
 });
 
-app.post('/api/persons', (req, res) => {
+
+app.post('/api/persons', (req, res, next) => {
     const { name, number } = req.body;
 
     if (!name || !number) {
@@ -90,11 +95,34 @@ app.post('/api/persons', (req, res) => {
             return newPerson.save();
         })
         .then(savedPerson => res.json(savedPerson))
-        .catch(error => {
-            console.error('Error saving person:', error);
-            res.status(500).json({ error: 'Error saving person' });
-        });
+        .catch(error => next(error));
 });
+
+// Middleware para manejar errores
+const errorHandler = (error, req, res, next) => {
+    console.error(error.message);
+
+    // Manejo de errores específicos
+    if (error.name === 'CastError') {
+        return res.status(400).send({ error: 'Malformatted ID' });
+    } else if (error.name === 'ValidationError') {
+        return res.status(400).json({ error: error.message });
+    }
+
+    // Si no es ninguno de esos, manejamos el error genérico
+    return res.status(500).json({ error: 'Internal Server Error' });
+}
+
+// Middleware para manejar rutas no definidas
+const unknownEndpoint = (req, res) => {
+    res.status(404).send({ error: 'unknown endpoint' });
+}
+
+// Rutas no definidas (debe ir después de todas las rutas anteriores)
+app.use(unknownEndpoint);
+
+// Middleware de manejo de errores (debe ir después de las rutas)
+app.use(errorHandler);
 
 // Servir frontend (React) para todas las rutas desconocidas
 app.get('*', (req, res) => {
