@@ -1,8 +1,10 @@
+require('dotenv').config()
 const helmet = require('helmet')
 const express = require('express')
 const cors = require('cors')
 const morgan = require('morgan')
-const path = require('path');
+const path = require('path')
+const Person = require('./models/person')
 
 const app = express();
 
@@ -44,33 +46,40 @@ let persons = [
 
 // Rutas API
 app.get('/api/persons', (req, res) => {
-    res.json(persons);
+    Person.find({})
+        .then(persons => res.json(persons))
+        .catch(error => {
+            console.error('Error fetching persons:', error);
+            res.status(500).json({ error: 'Error fetching persons' });
+        });
 });
 
 app.get('/api/persons/:id', (req, res) => {
-    const id = Number(req.params.id);
-    const person = persons.find(person => person.id === id);
-
-    if (person) {
-        res.json(person);
-    } else {
-        res.status(404).json({ error: 'Person not found' });
-    }
+    Person.findById(req.params.id)
+        .then(person => {
+            if (person) res.json(person);
+            else res.status(404).json({ error: 'Person not found' });
+        })
+        .catch(error => res.status(400).json({ error: 'Malformatted ID' }));
 });
 
 app.delete('/api/persons/:id', (req, res) => {
-    const id = Number(req.params.id);
-    persons = persons.filter(person => person.id !== id);
-    res.status(204).end();
+    Person.findByIdAndDelete(req.params.id)
+        .then(() => res.status(204).end())
+        .catch(error => res.status(400).json({ error: 'Malformatted ID' }));
 });
 
 app.get('/info', (req, res) => {
-    const numPersons = persons.length;
-    res.send(`
-        <p>La agenda telefónica tiene información de ${numPersons} personas.</p>
-        <p>${new Date()}</p>
-    `);
+    Person.countDocuments()
+        .then(count => {
+            res.send(`<p>La agenda telefónica tiene información de ${count} personas.</p><p>${new Date()}</p>`);
+        })
+        .catch(error => {
+            console.error('Error fetching info:', error);
+            res.status(500).json({ error: 'Error fetching info' });
+        });
 });
+
 
 const generateId = () => Math.floor(Math.random() * 10000000000000000000);
 
@@ -81,13 +90,20 @@ app.post('/api/persons', (req, res) => {
         return res.status(400).json({ error: 'name or number missing' });
     }
 
-    if (persons.find(person => person.name === name)) {
-        return res.status(400).json({ error: 'name must be unique' });
-    }
+    Person.findOne({ name })
+        .then(existingPerson => {
+            if (existingPerson) {
+                return res.status(400).json({ error: 'name must be unique' });
+            }
 
-    const newPerson = { id: generateId(), name, number };
-    persons = [...persons, newPerson];
-    res.json(newPerson);
+            const newPerson = new Person({ name, number });
+            return newPerson.save();
+        })
+        .then(savedPerson => res.json(savedPerson))
+        .catch(error => {
+            console.error('Error saving person:', error);
+            res.status(500).json({ error: 'Error saving person' });
+        });
 });
 
 // Servir frontend (React) para todas las rutas desconocidas

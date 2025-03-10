@@ -1,4 +1,13 @@
+require('dotenv').config()
 const mongoose = require('mongoose');
+
+console.log('MONGODB_URI:', process.env.MONGODB_URI);
+const MONGODB_URI = process.env.MONGODB_URI
+
+if (!MONGODB_URI) {
+  console.log('No se ha especificado la URL de la base de datos');
+  process.exit(1);
+}
 
 if (process.argv.length<3) {
     console.log('give password as argument')
@@ -13,32 +22,38 @@ if (!password) {
   process.exit(1);
 }
 
-const url = `mongodb+srv://myAtlasDBUser:${password}@cluster0.tw3ww.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`
-
 mongoose.set('strictQuery',false)
+mongoose.connect(MONGODB_URI)
+  .then(() => {
+    console.log('✅ Conectado a MongoDB');
+    if (!name || !number) {
+      // Si no se proporciona nombre o número, mostrar todas las personas
+      console.log('📖 Phonebook:');
+      return Person.find({});
+    } else {
+      // Si se proporciona nombre y número, agregar una nueva persona
+      const person = new Person({ name, number });
+      return person.save();
+    }
+  })
+  .then(result => {
+    if (result && result.name && result.number) {
+      console.log(`✅ Se ha añadido ${result.name} con número ${result.number} a la agenda telefónica.`);
+    } else {
+      result.forEach(person => {
+        console.log(`${person.name} ${person.number}`);
+      });
+    }
+    mongoose.connection.close();
+  })
+  .catch((error) => {
+    console.log('❌ Error al conectar con MongoDB:', error.message);
+    mongoose.connection.close();
+  });
 
-mongoose.connect(url)
-// Definir el esquema y modelo
 const personSchema = new mongoose.Schema({
-  name: String,
-  number: String,
+  name: { type: String, required: true },
+  number: { type: String, required: true },
 });
 
 const Person = mongoose.model('Person', personSchema);
-
-// Si solo se proporciona la contraseña, listar todos los contactos
-if (!name || !number) {
-  console.log('📖 Phonebook:');
-  Person.find({}).then(persons => {
-    persons.forEach(person => console.log(`${person.name} ${person.number}`));
-    mongoose.connection.close();
-  });
-} else {
-  // Si se proporcionan nombre y número, agregar una nueva entrada
-  const person = new Person({ name, number });
-
-  person.save().then(() => {
-    console.log(`✅ added ${name} number ${number} to phonebook`);
-    mongoose.connection.close();
-  });
-}
