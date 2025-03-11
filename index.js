@@ -88,14 +88,42 @@ app.post('/api/persons', (req, res, next) => {
     Person.findOne({ name })
         .then(existingPerson => {
             if (existingPerson) {
-                return res.status(400).json({ error: 'name must be unique' });
+                // Si la persona ya existe, actualizar su número en lugar de crear una nueva
+                return Person.findByIdAndUpdate(
+                    existingPerson._id,
+                    { number },
+                    { new: true, runValidators: true, context: 'query' }
+                );
             }
 
+            // Si no existe, crear una nueva entrada
             const newPerson = new Person({ name, number });
             return newPerson.save();
         })
         .then(savedPerson => res.json(savedPerson))
         .catch(error => next(error));
+});
+
+app.put('/api/persons/:id', (req, res, next) => {
+    const { number } = req.body;
+
+    if (!number) {
+        return res.status(400).json({ error: 'number missing' });
+    }
+
+    Person.findByIdAndUpdate(
+        req.params.id,
+        { number },
+        { new: true, runValidators: true, context: 'query' }
+    )
+    .then(updatedPerson => {
+        if (updatedPerson) {
+            res.json(updatedPerson);
+        } else {
+            res.status(404).json({ error: 'Person not found' });
+        }
+    })
+    .catch(error => next(error));
 });
 
 // Middleware para manejar errores
