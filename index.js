@@ -38,7 +38,7 @@ morgan.token('body', (req) => JSON.stringify(req.body));
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'));
 
 // Rutas API
-app.get('/api/persons', (req, res) => {
+app.get('/api/persons', (req, res, next) => {
     Person.find({})
         .then(persons => res.json(persons))
         .catch(error => next(error))
