@@ -105,7 +105,7 @@ app.post('/api/persons', (req, res, next) => {
 });
 
 app.put('/api/persons/:id', (req, res, next) => {
-    const { number } = req.body;
+    const { name, number } = req.body;
 
     if (!number) {
         return res.status(400).json({ error: 'number missing' });
@@ -113,7 +113,7 @@ app.put('/api/persons/:id', (req, res, next) => {
 
     Person.findByIdAndUpdate(
         req.params.id,
-        { number },
+        { name, number },
         { new: true, runValidators: true, context: 'query' }
     )
     .then(updatedPerson => {

@@ -4,11 +4,12 @@ const phoneRegex = /^\d{2,3}-\d{5,}$/;
 
 const personSchema = new mongoose.Schema({
   name: { type: String, required: true, minlength: [3, 'The name must be at least 3 characters long']},
-  number: { type: String, required: true },
+  number: { type: String, required: true, minlength: [8, 'The phone number must be at least 8 characters long'],
   validate: {
     validator: number => phoneRegex.test(number),
-    message: props => `${props.value} is not a valid phone number`
-  }
+    message: props => `${props.value} is not a valid phone number`,
+  },
+  },
 });
 
 personSchema.set('toJSON', {
